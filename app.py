@@ -16,35 +16,74 @@ GPIO.output(LED_PIN2, GPIO.LOW)
 GPIO.output(LED_PIN3, GPIO.LOW)
 
 root = Tk()
-root. geometry("400x150")
-root.title("Blink LED Setup")
+root.geometry("480x320")
+root.title("LED Control Panel")
+root.resizable(False, False)
 
-frame = ttk. Frame(root, padding=3)
-frame. pack()
+style = ttk.Style()
+style.configure('TRadiobutton', font=('Arial', 12), padding=10)
+style.configure('Title.TLabel', font=('Arial', 16, 'bold'))
+style.configure('Close.TButton', font=('Arial', 10), padding=5, foreground='red')
 
-def BlinkLight(Colour):
-	GPIO.output(LED_PIN1, GPIO.LOW)
-	GPIO.output(LED_PIN2, GPIO.LOW)
-	GPIO.output(LED_PIN3, GPIO.LOW)
+mainFrame = ttk.Frame(root, padding=20)
+mainFrame.pack(fill=BOTH, expand=True)
 
-	if(Colour == "red"):
-		GPIO.output(LED_PIN1, GPIO.HIGH)
+ttk.Label(mainFrame, text="LED Control Panel", style='Title.TLabel').grid(column=0, row=0, columnspan=3, pady=10)
 
-	elif(Colour == "green"):
-		GPIO.output(LED_PIN2, GPIO.HIGH)
+statusFrame = ttk.Frame(mainFrame)
+statusFrame.grid(column=0, row=1, columnspan=3, pady=10)
 
-	elif(Colour == "blue"):
-		GPIO.output(LED_PIN3, GPIO.HIGH)
+led_indicators = {
+    "red": Canvas(statusFrame, width=60, height=60, bg='white', highlightthickness=1, highlightbackground='black'),
+    "green": Canvas(statusFrame, width=60, height=60, bg='white', highlightthickness=1, highlightbackground='black'),
+    "blue": Canvas(statusFrame, width=60, height=60, bg='white', highlightthickness=1, highlightbackground='black')
+}
 
-ttk. Button(frame, text="Red", width="20", command=lambda: BlinkLight("red")).grid(column=1, row=0)
-ttk. Button(frame, text="Green", width="20", command=lambda: BlinkLight("green")).grid(column=1, row=1)
-ttk. Button(frame, text="Blue", width="20", command=lambda: BlinkLight("blue")).grid(column=1, row=2)
+# Create LED indicators on the canvases
+for color, canvas in led_indicators.items():
+    canvas.grid(row=0, column=list(led_indicators.keys()).index(color), padx=10)
+    canvas.create_oval(10, 10, 50, 50, fill='gray', tags="led")
 
-ttk. Button(frame, text="Close", width="5", command=root.destroy).grid(column=1, row=4)
+def updateLED(active_color=None):
+    for color, canvas in led_indicators.items():
+        if color == active_color:
+            canvas.itemconfig("led", fill=color)
+        else:
+            canvas.itemconfig("led", fill='gray')
+
+def BlinkLight():
+    GPIO.output(LED_PIN1, GPIO.LOW)
+    GPIO.output(LED_PIN2, GPIO.LOW)
+    GPIO.output(LED_PIN3, GPIO.LOW)
+    
+    color = led_color.get()
+    if color == "red":
+        GPIO.output(LED_PIN1, GPIO.HIGH)
+    elif color == "green":
+        GPIO.output(LED_PIN2, GPIO.HIGH)
+    elif color == "blue":
+        GPIO.output(LED_PIN3, GPIO.HIGH)
+    
+    updateLED(color)
+
+# Variable to hold the selected radio button value
+led_color = StringVar(value="")  # Start with no selection
+
+radioFrame = ttk.Frame(mainFrame)
+radioFrame.grid(column=0, row=2, columnspan=3, pady=20)
+
+# Create radio buttons
+ttk.Radiobutton(radioFrame, text="Red", variable=led_color, value="red", command=BlinkLight).pack(side=LEFT, padx=10)
+ttk.Radiobutton(radioFrame, text="Green", variable=led_color, value="green", command=BlinkLight).pack(side=LEFT, padx=10)
+ttk.Radiobutton(radioFrame, text="Blue", variable=led_color, value="blue", command=BlinkLight).pack(side=LEFT, padx=10)
+
+# Different style close button
+close_button = ttk.Button(mainFrame, text="Close", style='Close.TButton', command=root.destroy)
+close_button.grid(column=0, row=3, columnspan=3, pady=6, sticky='e', padx=10)
+
+updateLED()
 
 try:
     root.mainloop()
 finally:
     GPIO.cleanup()
-
-
